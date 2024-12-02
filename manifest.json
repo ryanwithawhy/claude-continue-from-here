@@ -1,0 +1,15 @@
+{
+    "manifest_version": 3,
+    "name": "Start New Claude Chat from Here",
+    "version": "1.0",
+    "description": "Create new chats from any point in a Claude conversation",
+    "permissions": [
+      "activeTab",
+      "scripting"
+    ],
+    "content_scripts": [{
+      "matches": ["https://claude.ai/chat/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"]
+    }]
+  }
