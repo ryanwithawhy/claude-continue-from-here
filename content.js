@@ -5,108 +5,26 @@ Below you can see the messages I sent you and what you provided in response.
 const FOLLOW_UP = `\n---------------------
 I would like to continue the conversation with the following:\n\n`
 
-async function extractMessageContent(message) {
-    const contents = [];
-    
-    // Check for file attachments first 
-    const fileAttachments = message.querySelectorAll('[data-testid]');
-    for (const file of fileAttachments) {
-      if (file.dataset.testid.endsWith('.sql') || file.dataset.testid.endsWith('.js') || file.dataset.testid.endsWith('.py')) {
-        const button = file.querySelector('button');
-        if (!button) continue;
 
-        try {
-          const codeContent = await getCodeFromReference(file.closest('[data-testid]'));
-          if (codeContent) {
-            contents.push({
-              type: 'file-reference',
-              title: file.dataset.testid,
-              elements: [{
-                language: file.dataset.testid.split('.').pop(),
-                code: codeContent.elements[0].code
-              }]
-            });
-          }
-        } catch (error) {
-          console.error('Error getting file content:', error);
-        }
-      }
-    }
-
-    const gridContainer = message.querySelector('.font-user-message') || message.querySelector('.grid-cols-1.grid.gap-2\\.5');
-
-    if (gridContainer) {
-      const elements = gridContainer.children;
-      
-      for (const element of elements) {
-        const elementType = element.tagName.toLowerCase();
-        
-        switch (elementType) {
-          case 'p':
-            contents.push({
-              type: 'p',
-              elements: [element.textContent]
-            });
-            break;
-            
-          case 'pre':
-            const codeText = element.textContent
-              .split('\n')
-              .map(line => line.trim());
-            let firstLine = processCodeBlockFirstLine(codeText[0]);
-            codeText[0] = firstLine;
-            contents.push({
-              type: 'pre',
-              elements: codeText
-            });
-            break;
-            
-          case 'ol':
-          case 'ul':
-            const listItems = Array.from(element.querySelectorAll('li'))
-              .map(li => li.textContent);
-            contents.push({
-              type: elementType,
-              elements: listItems
-            });
-            break;
-            
-          case 'div':
-            if (element.classList.contains('font-styrene') && element.classList.contains('relative')) {
-              try {
-                const codeContent = await getCodeFromReference(element);
-                if (codeContent) {
-                  contents.push(codeContent);
-                }
-              } catch (error) {
-                console.error('Error getting code reference:', error);
-              }
-            }
-            break;
-        }
-      }
-    }
-  
-    return contents;
-}
 
 // async function extractMessageContent(message) {
 //     const contents = [];
     
-//     // Check for file attachments first
-//     const fileAttachments = message.querySelectorAll('[data-testid]');
-//     for (const file of fileAttachments) {
-//       if (file.dataset.testid.endsWith('.sql') || file.dataset.testid.endsWith('.js') || file.dataset.testid.endsWith('.py')) {
-//         contents.push({
-//           type: 'file-reference',
-//           title: file.dataset.testid,
-//           elements: [{
-//             language: file.dataset.testid.split('.').pop(),
-//             code: file.textContent || ''
-//           }]
-//         });
-//       }
-//     }
+//     // // Check for file attachments first
+//     // const fileAttachments = message.querySelectorAll('[data-testid]');
+//     // for (const file of fileAttachments) {
+//     //   if (file.dataset.testid.endsWith('.sql') || file.dataset.testid.endsWith('.js') || file.dataset.testid.endsWith('.py')) {
+//     //     console.log("file")
+//     //     console.log(file)
+//     //     contents.push({
+//     //       type: 'file-reference',
+//     //       title: file.dataset.testid,
+//     //       elements: [{
+//     //         code: file.textContent || ''
+//     //       }]
+//     //     });
+//     //   }
+//     // }
 
 //     // Find the main grid container
 //     const gridContainer = message.querySelector('.font-user-message') || message.querySelector('.grid-cols-1.grid.gap-2\\.5');
@@ -148,9 +66,9 @@ async function extractMessageContent(message) {
 //             break;
             
 //           case 'div':
+//             console.log("HIT A DIV")
 //             // Handle both user files and Claude code references
-//             if ((element.classList.contains('font-styrene') && element.classList.contains('relative')) ||
-//                 element.querySelector('[data-testid^="file"]')) {
+//             if (element.hasAttribute('data-testid')) {
 //               try {
 //                 const codeContent = await getCodeFromReference(element);
 //                 if (codeContent) {
@@ -168,78 +86,149 @@ async function extractMessageContent(message) {
 //     return contents;
 // }
 
-// // Modified code reference handling - the rest of the original code remains the same
-// async function extractMessageContent(message) {
-//     const contents = [];
-    
-//     // Find the main grid container
-//     const gridContainer = message.querySelector('.font-user-message') || message.querySelector('.grid-cols-1.grid.gap-2\\.5');
-//     // const gridContainer = message.querySelector('.grid-cols-1.grid.gap-2\\.5');
+// function extractUserProvidedFiles(element){
+//   const fileContent = [];
+//   const fileButtons = element.querySelectorAll('button[data-testid="file-thumbnail"]');
+//   fileButtons.forEach((button) => {
+//     title = button.closest('div[data-testid]').getAttribute('data-testid');
+//     title = 
+//   });
+
+//   title 
+
+//   const codeContent = {
+//     type: 'code-reference',
+//     title,
+//     elements: [{
+//       language: getCodeLanguage(codeBlock),
+//       code: codeBlock.textContent
+//         .split('\n')
+//     }]
+//   };
 
 
-//     if (gridContainer) {
-//       // Get all direct children of the grid container
-//       const elements = gridContainer.children;
-      
-//       // Process elements sequentially to handle async operations
-//       for (const element of elements) {
-//         const elementType = element.tagName.toLowerCase();
-        
-//         switch (elementType) {
-//           case 'p':
-//             contents.push({
-//               type: 'p',
-//               elements: [element.textContent]
-//             });
-//             break;
-            
-//           case 'pre':
-//             // Handle code blocks
-//             const codeText = element.textContent
-//               .split('\n')
-//               .map(line => line.trim());
-//             let language, firstLine = processCodeBlockFirstLine(codeText[0]);
-//             codeText[0] = firstLine
-//             contents.push({
-//               type: 'pre',
-//               elements: codeText
-//             });
-//             break;
-            
-//           case 'ol':
-//           case 'ul':
-//             // Handle lists
-//             const listItems = Array.from(element.querySelectorAll('li'))
-//               .map(li => li.textContent);
-            
-//             contents.push({
-//               type: elementType,
-//               elements: listItems
-//             });
-//             break;
-            
-//           case 'div':
-//             console.log(elementType)
-//             // Check if it's a code reference
-//             if (element.classList.contains('font-styrene') && 
-//                 element.classList.contains('relative')) {
-              
-//               try {
-//                 const codeContent = await getCodeFromReference(element);
-//                 if (codeContent) {
-//                   contents.push(codeContent);
-//                 }
-//               } catch (error) {
-//                 console.error('Error getting code reference:', error);
-//               }
-//             }
-//             break;
-//         }
-//       }
-//     }
+//   potentialFileContainers = element.querySelectorAll('button[data-testid="file-thumbnail"]');
+//   actualFileContainers = Array.from(fileContainer).filter(div => 
+//       div.querySelector('button[data-testid="file-thumbnail"]') !== null
+//   );
+
   
-//     return contents;
-//   }
+
+
+// }
+
+// function extractUserFileFromButton(button){
+//   // expands the sidebar so we can see the file
+//   title = button.closest('div[data-testid]').getAttribute('data-testid');
+
+//   button.click();
+
+//   const fileContent = {
+//     type: 'file-reference',
+//     title,
+//     elements: [{
+//       language: null,
+//       text: codeBlock.textContent
+//         .split('\n')
+//     }]
+//   };
+// }
+
+// function extractUserProvidedFiles(element){
+//   const fileContent = [];
+//   const fileButtons = element.querySelectorAll('button[data-testid="file-thumbnail"]');
+//   fileButtons.forEach((button) => {
+//     fileContent.push(extactUserFileFromButton(button))
+//   });
+
+//   title 
+
+
+
+
+//   potentialFileContainers = element.querySelectorAll('button[data-testid="file-thumbnail"]');
+//   actualFileContainers = Array.from(fileContainer).filter(div => 
+//       div.querySelector('button[data-testid="file-thumbnail"]') !== null
+//   );
+
+  
+
+
+// }
+
+
+// Modified code reference handling - the rest of the original code remains the same
+async function extractMessageContent(message) {
+    const contents = [];
+    
+    // Find the main grid container
+    const gridContainer = message.querySelector('.font-user-message') || message.querySelector('.grid-cols-1.grid.gap-2\\.5');
+    // const gridContainer = message.querySelector('.grid-cols-1.grid.gap-2\\.5');
+
+
+    if (gridContainer) {
+      // Get all direct children of the grid container
+      const elements = gridContainer.children;
+      
+      // Process elements sequentially to handle async operations
+      for (const element of elements) {
+        const elementType = element.tagName.toLowerCase();
+        
+        switch (elementType) {
+          case 'p':
+            contents.push({
+              type: 'p',
+              elements: [element.textContent]
+            });
+            break;
+            
+          case 'pre':
+            // Handle code blocks
+            const codeText = element.textContent
+              .split('\n')
+              .map(line => line.trim());
+            let language, firstLine = processCodeBlockFirstLine(codeText[0]);
+            codeText[0] = firstLine
+            contents.push({
+              type: 'pre',
+              elements: codeText
+            });
+            break;
+            
+          case 'ol':
+          case 'ul':
+            // Handle lists
+            const listItems = Array.from(element.querySelectorAll('li'))
+              .map(li => li.textContent);
+            
+            contents.push({
+              type: elementType,
+              elements: listItems
+            });
+            break;
+            
+          case 'div':
+            console.log(elementType)
+            // Check if it's a code reference
+            if (element.classList.contains('font-styrene') && 
+                element.classList.contains('relative')) {
+              
+              try {
+                const codeContent = await getCodeFromReference(element);
+                if (codeContent) {
+                  contents.push(codeContent);
+                }
+              } catch (error) {
+                console.error('Error getting code reference:', error);
+              }
+            }
+            break;
+        }
+      }
+    }
+  
+    return contents;
+  }
   
   async function getCodeFromReference(referenceElement) {
     const button = referenceElement.querySelector('button');
@@ -252,8 +241,24 @@ async function extractMessageContent(message) {
     // Store current sidebar content if any
     const previousSidebarContent = document.querySelector('.fixed.bottom-0.top-0.flex.w-full.flex-col');
     const previousCode = previousSidebarContent?.querySelector('.code-block__code');
+    
+    // If sidebar is already open, check if it's showing the code we want
+    if (previousCode) {
+      const previousTitle = previousSidebarContent.querySelector('.font-medium.leading-tight')?.textContent;
+      if (previousTitle === title) {
+        // We already have the correct code open
+        return {
+          type: 'code-reference',
+          title,
+          elements: [{
+            language: getCodeLanguage(previousCode),
+            code: previousCode.textContent.split('\n')
+          }]
+        };
+      }
+    }
   
-    // Click the button
+    // Click the button to open/update sidebar
     button.click();
   
     // Wait for the sidebar code to appear or update
@@ -266,8 +271,7 @@ async function extractMessageContent(message) {
       title,
       elements: [{
         language: getCodeLanguage(codeBlock),
-        code: codeBlock.textContent
-          .split('\n')
+        code: codeBlock.textContent.split('\n')
       }]
     };
   
@@ -276,7 +280,7 @@ async function extractMessageContent(message) {
   
     return codeContent;
   }
-  
+
   async function waitForCodeBlock(previousCode, maxAttempts = 50) {
     for (let i = 0; i < maxAttempts; i++) {
       await new Promise(resolve => setTimeout(resolve, 100)); // Wait 100ms between checks
@@ -420,12 +424,13 @@ function formatChat(chat){
             console.log(item)
             fileName = item.title;
             linesOfCode = item.elements[0].code
-            formattedCode = `// File name: ${fileName}\n` + linesOfCode.join("\n")
+            let formattedCode = `// File name: ${fileName}\n` + linesOfCode.join("\n")
             formattedContents.push(formattedCode);
 
         } else if (item.type === 'pre') {
             fileName = item.title;
             linesOfCode = item.elements
+            let formattedCode = linesOfCode.join("\n")
             formattedContents.push(formattedCode);
         } else {
             console.log(item.type)

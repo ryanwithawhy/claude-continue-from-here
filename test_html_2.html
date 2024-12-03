@@ -1,0 +1,34 @@
+function extractUserFileFromButton(button){
+  title = button.closest('div[data-testid]').getAttribute('data-testid');
+  const codeContent = {
+    type: 'file-reference',
+    title,
+    elements: [{
+      language: getCodeLanguage(codeBlock),
+      text: codeBlock.textContent
+        .split('\n')
+    }]
+  };
+}
+
+function extractUserProvidedFiles(element){
+  const fileContent = [];
+  const fileButtons = element.querySelectorAll('button[data-testid="file-thumbnail"]');
+  fileButtons.forEach((button) => {
+    fileContent.push(extactUserFileFromButton(button))
+  });
+
+  title 
+
+
+
+
+  potentialFileContainers = element.querySelectorAll('button[data-testid="file-thumbnail"]');
+  actualFileContainers = Array.from(fileContainer).filter(div => 
+      div.querySelector('button[data-testid="file-thumbnail"]') !== null
+  );
+
+  
+
+
+}
