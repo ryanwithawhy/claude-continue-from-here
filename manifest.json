@@ -9,7 +9,7 @@
     ],
     "content_scripts": [{
       "matches": ["https://claude.ai/chat/*"],
-      "js": ["content.js"],
+      "js": ["content.js", "turndown.js"],
       "css": ["styles.css"]
     }]
   }

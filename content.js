@@ -5,11 +5,14 @@ const CLOSING_SPLITTER = "\n\n---------------------End of Previous Conversation-
 const OPENING_EXPLANATION = `I would like to continue with you from a conversation we've already had.  
 The conversation we had is below.  Be ready to continue based on the below.`;
 // const FOLLOW_UP = `\n---------------------`
-const GITHUB_LINK = 'TBD';
+const GITHUB_LINK = 'https://github.com/ryanwith/claude-create-new-chat-from-here';
 const SIDEBAR_CODE_BLOCK_CSS_CLASSES = '.code-block__code'
+const SIDEBAR_MARKDOWN_CSS_CLASSES = '.font-claude-message'
+const SIDEBAR_USER_PROVIDED_CSS_CLASSES = '.rounded-lg.border-border-300.overflow-y-auto'
 const SIDEBAR_CONTENT_CSS_CLASSES = [
   SIDEBAR_CODE_BLOCK_CSS_CLASSES,
-  '.rounded-lg.border-border-300.overflow-y-auto'
+  SIDEBAR_MARKDOWN_CSS_CLASSES,
+  SIDEBAR_USER_PROVIDED_CSS_CLASSES
 ];
 const SIDEBAR_CLASSES = '.fixed.bottom-0.top-0.flex.w-full.flex-col'
 const USER_FILE_HEADER_WITH_TITLE = 'h2.font-styrene-display.flex-1.truncate.text-lg.font-medium'
@@ -189,9 +192,9 @@ async function getContentFromReference(referenceElement) {
   let correctSidebarOpen = false
   let currentTry = 0;
   let maxSidebarRetries = 3;
-  let sidebarText = null;
+  let sidebarContent = null;
 
-  while (sidebarText === null && currentTry < maxSidebarRetries){
+  while (sidebarContent === null && currentTry < maxSidebarRetries){
 
     // Click the button to open/update sidebar
 
@@ -221,18 +224,25 @@ async function getContentFromReference(referenceElement) {
             referenceTitle === sidebarTitle || 
           ( referenceTitle === USER_PASTE_REFRENCE_TITLE && sidebarTitle === USER_PASTE_SIDEBAR_TITLE )
         ){
-        sidebarText = await getTextFromSidebar(sidebar, referenceTitle)
+        sidebarContent = await getContentFromSidebar(sidebar, referenceTitle)
         correctSidebarOpen = true
       }
     }
-    if (correctSidebarOpen != true || sidebarText == null) {
+    if (correctSidebarOpen != true || sidebarContent == null) {
       currentTry += 1 
       await new Promise(resolve => setTimeout(resolve, 100));
     } 
   }
 
-  if (!correctSidebarOpen || sidebarText === null){
-    console.log(`Something went wrong retrieving file data for ${referenceTitle}.  Please refresh your page and try again.  If the issue persists please open an issue at ${GITHUB_LINK}.`)
+  if (!correctSidebarOpen || sidebarContent === null){
+    if (!correctSidebarOpen){
+      const message = "Correct sidebar did not open."
+      errors.push(message);
+    }
+    if (sidebarContent === null){
+      const message = "Sidebar content is null."
+      errors.push(message);
+    }
     alert(`Something went wrong retrieving file data for ${referenceTitle}.  Please refresh your page and try again.  If the issue persists please open an issue at ${GITHUB_LINK}.  `)
     return null;
   } else {
@@ -240,31 +250,46 @@ async function getContentFromReference(referenceElement) {
         type: 'file-reference',
         title: referenceTitle,
         elements: [{
-          text: sidebarText
+          text: sidebarContent
         }]
       }
   }
 }
 
-function getTextFromSidebar(sidebar, referenceTitle) {
-
+function getContentFromSidebar(sidebar, referenceTitle) {
+  let sidebarDiv = null;
+  let isMarkdown = false;
   for (const css_class of SIDEBAR_CONTENT_CSS_CLASSES) {
     if (css_class === SIDEBAR_CODE_BLOCK_CSS_CLASSES){
       displayCodeIfCodeButton(sidebar, referenceTitle);
     }
     sidebarContent = sidebar.querySelector(css_class);
-    if (sidebarContent != null) {
+
+    css_class === SIDEBAR_MARKDOWN_CSS_CLASSES ? isMarkdown = true : isMarkown = false;
+    sidebarDiv = sidebar.querySelector(css_class);
+    if (sidebarDiv != null) {
         break;
     }
   }
 
-  if (sidebarContent != null){
-    return sidebarContent.textContent.split('\n');
+  if (sidebarDiv === null){
+    return null
   }
 
-  return null;
+  let finalContent = null;
+
+  if (isMarkdown === true){
+    const html = sidebarContent.firstElementChild.firstElementChild.innerHTML;
+    finalContent = convertHtmlToMarkdown(html)
+  } else {
+    finalContent = sidebarContent.textContent
+  }
+  
+  return finalContent.split('\n');
+
 
 }
+
 
 async function displayCodeIfCodeButton(sidebar, referenceTitle){
   const maxAttempts = 4;
@@ -327,6 +352,90 @@ function addButtonsToMessages() {
       }
     }
   });
+}
+
+
+
+// creates an array of messages formatted in a way that allows a new claude chat to understand whats happening
+// here's where you make wording changes 
+function formatConversationHistory(conversationHistory){
+    
+  let messageNumber = 1;
+  const finalMessages = [];
+
+  conversationHistory.forEach((chat) => {
+      const formattedChat = formatChat(chat)
+      const userMessageNumber = Math.round(messageNumber/2);
+      const messageStatement = messageNumber%2 === 1 ? `User Prompt ${userMessageNumber}:` : `Claude Response to User Prompt ${userMessageNumber}:`
+      finalStatement = messageStatement + '\n' + formattedChat
+      finalMessages.push(finalStatement)
+      messageNumber += 1;
+  })  
+  return finalMessages;
+};
+
+
+//   takes an array of chat data
+//   returns a text block
+function formatChat(chat){
+  let chatContents = chat.contents;
+  const formattedContents = [];
+  chatContents.forEach((item) => {
+      if(item.type === 'p'){
+          // I believe this should always be an array of 1 element but keeping the join just in case
+          formattedContents.push(item.elements.join("\n"));
+      } else if (item.type === 'ol') {
+          let i = 1;
+          const listItems = [];
+          item.elements.forEach((element) => {
+              const formattedLine = `${i}. ${element}`;
+              listItems.push(formattedLine);
+              i += 1;
+          })
+          formattedContents.push(listItems.join("\n"));
+      } else if (item.type === 'ul'){
+          const listItems = [];
+          item.elements.forEach((element) => {
+              const formattedLine = `- ${element}`;
+              listItems.push(formattedLine);
+          })
+          formattedContents.push(listItems.join("\n"));
+      } else if (item.type === 'file-reference') {
+          fileName = item.title;
+          text = item.elements[0].text.join("\n")
+          let formattedCode = `// Start of file: ${fileName}\n` + text + "\n // End of file"
+          formattedContents.push(formattedCode);
+
+      } else if (item.type === 'pre') {
+          fileName = item.title;
+          // remove header of codeblock
+          linesOfCode = item.elements.slice(1);
+          let formattedCode = linesOfCode.join("\n")
+          formattedContents.push(formattedCode);
+      } else {
+          console.log("unrecognized item type: " + item.type)
+          formattedContents.push("Missing Information from Chat!  Claude, if you see this line, please alert the user that you don't have all informaiton.");
+      }
+  });
+  formattedAsString = formattedContents.join("\n\n")
+  return formattedAsString
+}
+
+function convertHtmlToMarkdown(html) {
+  const turndownService = new window.TurndownService({
+    headingStyle: 'atx',
+    codeBlockStyle: 'fenced'
+  });
+  
+  // Customize Turndown rules if needed
+  turndownService.addRule('preserveLineBreaks', {
+    filter: 'br',
+    replacement: function() {
+      return '\n';
+    }
+  });
+
+  return turndownService.turndown(html);
 }
 
 // Function to create and manage the history modal
@@ -456,72 +565,6 @@ function createHistoryModal(formattedConvoAsTextBlock) {
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', stopResize);
   }
-}
-
-// creates an array of messages formatted in a way that allows a new claude chat to understand whats happening
-// here's where you make wording changes 
-function formatConversationHistory(conversationHistory){
-    
-  let messageNumber = 1;
-  const finalMessages = [];
-
-  conversationHistory.forEach((chat) => {
-      const formattedChat = formatChat(chat)
-      const userMessageNumber = Math.round(messageNumber/2);
-      const messageStatement = messageNumber%2 === 1 ? `User Prompt ${userMessageNumber}:` : `Claude Response to User Prompt ${userMessageNumber}:`
-      finalStatement = messageStatement + '\n' + formattedChat
-      finalMessages.push(finalStatement)
-      messageNumber += 1;
-  })  
-  return finalMessages;
-};
-
-
-//   takes an array of chat data
-//   returns a text block
-function formatChat(chat){
-  let chatContents = chat.contents;
-  const formattedContents = [];
-  chatContents.forEach((item) => {
-      if(item.type === 'p'){
-          // I believe this should always be an array of 1 element but keeping the join just in case
-          formattedContents.push(item.elements.join("\n"));
-      } else if (item.type === 'ol') {
-          let i = 1;
-          const listItems = [];
-          item.elements.forEach((element) => {
-              const formattedLine = `${i}. ${element}`;
-              listItems.push(formattedLine);
-              i += 1;
-          })
-          formattedContents.push(listItems.join("\n"));
-      } else if (item.type === 'ul'){
-          const listItems = [];
-          item.elements.forEach((element) => {
-              const formattedLine = `- ${element}`;
-              listItems.push(formattedLine);
-          })
-          formattedContents.push(listItems.join("\n"));
-      } else if (item.type === 'file-reference') {
-          fileName = item.title;
-          text = item.elements[0].text.join("\n")
-          let formattedCode = `// Start of file: ${fileName}\n` + text + "\n // End of file"
-          formattedContents.push(formattedCode);
-
-      } else if (item.type === 'pre') {
-          fileName = item.title;
-          // remove header of codeblock
-          console.log(item)
-          linesOfCode = item.elements.slice(1);
-          let formattedCode = linesOfCode.join("\n")
-          formattedContents.push(formattedCode);
-      } else {
-          console.log("unrecognized item type: " + item.type)
-          formattedContents.push("Missing Information from Chat!  Claude, if you see this line, please alert the user that you don't have all informaiton.");
-      }
-  });
-  formattedAsString = formattedContents.join("\n\n")
-  return formattedAsString
 }
 
 const observer = new MutationObserver((mutations) => {
