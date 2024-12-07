@@ -319,16 +319,11 @@ function addButtonsToMessages() {
         const formattedConvoAsTextBlock = formattedConversationHistory.join(SPLITTER);
         createHistoryModal(formattedConvoAsTextBlock);
       });
-      
-      const lastElement = Array.from(response.children).filter(child => 
-        !child.classList.contains('new-chat-button')
-      ).pop();
-      
-      // Insert the button after the last content element
-      if (lastElement) {
-        lastElement.after(button);
+      const messageDiv = response.querySelector('div > div.grid-cols-1.grid');
+      if (messageDiv) {
+        messageDiv.insertAdjacentElement('afterend', button);
       } else {
-        response.appendChild(button);
+        response.appendChild(button);  // fallback
       }
     }
   });
@@ -529,18 +524,24 @@ function formatChat(chat){
   return formattedAsString
 }
 
-// Observer code remains the same
 const observer = new MutationObserver((mutations) => {
-  for (const mutation of mutations) {
+  mutations.forEach(mutation => {
+    // Check for new nodes
     if (mutation.addedNodes.length) {
       addButtonsToMessages();
     }
-  }
+    // Check for data-is-streaming attribute changes
+    if (mutation.type === 'attributes' && mutation.attributeName === 'data-is-streaming') {
+      setTimeout(addButtonsToMessages, 100); // Small delay to ensure content is settled
+    }
+  });
 });
 
 observer.observe(document.body, {
   childList: true,
-  subtree: true
+  subtree: true,
+  attributes: true,
+  attributeFilter: ['data-is-streaming']
 });
 
 addButtonsToMessages();
