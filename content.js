@@ -298,8 +298,8 @@ function findButtonByText(buttonText){
 }
 
 function addButtonsToMessages() {
-  const claudeResponses = document.querySelectorAll('.font-claude-message');
-  
+  const claudeResponses = document.querySelectorAll('div[data-test-render-count] .font-claude-message');
+    
   // only add a button if it doesn't already have one
   claudeResponses.forEach(response => {
     if (!response.querySelector('.new-chat-button')) {
