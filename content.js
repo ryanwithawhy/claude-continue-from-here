@@ -304,7 +304,7 @@ function addButtonsToMessages() {
   claudeResponses.forEach(response => {
     if (!response.querySelector('.new-chat-button')) {
       const button = document.createElement('button');
-      button.textContent = 'Create New Chat From Here';
+      button.innerHTML = `<span>Create New Chat From Here</span>`;
       button.className = 'new-chat-button';
       
       button.addEventListener('click', async () => {
@@ -318,10 +318,18 @@ function addButtonsToMessages() {
         const formattedConversationHistory = formatConversationHistory(conversationHistory);
         const formattedConvoAsTextBlock = formattedConversationHistory.join(SPLITTER);
         createHistoryModal(formattedConvoAsTextBlock);
-
       });
       
-      response.appendChild(button);
+      const lastElement = Array.from(response.children).filter(child => 
+        !child.classList.contains('new-chat-button')
+      ).pop();
+      
+      // Insert the button after the last content element
+      if (lastElement) {
+        lastElement.after(button);
+      } else {
+        response.appendChild(button);
+      }
     }
   });
 }

@@ -1,10 +1,14 @@
 .new-chat-button {
-  padding: 8px 16px;
+  padding: 4px 8px;
   margin-top: 8px;
   background-color: #F3F4F6;
   border: 1px solid #E5E7EB;
   border-radius: 6px;
   cursor: pointer;
+  font-size: 0.8rem;
+  font-family: __styreneB_5d855b, __styreneB_Fallback_5d855b, ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-variation-settings: "ss01";
+  color: rgb(44, 44, 40)
 }
 
 .new-chat-button:hover {
