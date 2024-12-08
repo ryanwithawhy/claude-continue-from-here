@@ -266,8 +266,8 @@ function getContentFromSidebar(sidebar, referenceTitle) {
       displayCodeIfCodeButton(sidebar, referenceTitle);
     }
     sidebarContent = sidebar.querySelector(css_class);
-
-    css_class === SIDEBAR_MARKDOWN_CSS_CLASSES ? isMarkdown = true : isMarkown = false;
+    console.log("css_class: " + css_class)
+    css_class === SIDEBAR_MARKDOWN_CSS_CLASSES && sidebarContent != null ? isMarkdown = true : isMarkown = false;
     sidebarDiv = sidebar.querySelector(css_class);
     if (sidebarDiv != null) {
         break;
