@@ -1,8 +1,15 @@
 {
     "manifest_version": 3,
-    "name": "Start New Claude Chat from Here",
+    "name": "Claude: Continue from Here",
     "version": "1.0",
-    "description": "Create new chats from any point in a Claude conversation",
+    "icons": {
+      "16": "assets/Claude Continue from Here - 16.png",
+      "32": "assets/Claude Continue from Here - 32.png",
+      "64": "assets/Claude Continue from Here - 64.png",
+      "128": "assets/Claude Continue from Here - 128.png",
+      "830": "assets/Claude Continue from Here - 830.png"
+    },
+    "description": "Easily start a new Claude chat from any message, complete with all chat history and files up to that point!",
     "permissions": [
       "activeTab",
       "scripting"
