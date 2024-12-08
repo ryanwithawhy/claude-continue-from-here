@@ -20,7 +20,7 @@ const CLAUDE_FILE_HEADER_WITH_TITLE = 'h3.text-text-100.font-tiempos.truncate.pl
 const CLAUDE_TITLE_ELEMENT_CLASSES = '.font-medium.leading-tight'
 const USER = "USER";
 const CLAUDE = "CLAUDE"
-const USER_PASTE_REFRENCE_TITLE = "paste.txt"
+const USER_PASTE_REFERENCE_TITLE = "paste.txt"
 const USER_PASTE_SIDEBAR_TITLE = "Pasted content"
 
 let errors = [];
@@ -220,9 +220,11 @@ async function getContentFromReference(referenceElement) {
         errors.push(`There was an issue pulling the file ${referenceTitle}.  No sidebar header found.`);
         return
       }
+
+      // they don't always match so matching needs to be generous
       if (
-            referenceTitle === sidebarTitle || 
-          ( referenceTitle === USER_PASTE_REFRENCE_TITLE && sidebarTitle === USER_PASTE_SIDEBAR_TITLE )
+             (sidebarTitle.includes(referenceTitle) || referenceTitle.includes(referenceTitle)) || 
+          ( referenceTitle.toLowerCase().includes("paste") & sidebarTitle.toLowerCase().includes("paste") )
         ){
         sidebarContent = await getContentFromSidebar(sidebar, referenceTitle)
         correctSidebarOpen = true
