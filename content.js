@@ -22,6 +22,7 @@ const USER = "USER";
 const CLAUDE = "CLAUDE"
 const USER_PASTE_REFERENCE_TITLE = "paste.txt"
 const USER_PASTE_SIDEBAR_TITLE = "Pasted content"
+let COUNTER = 1;
 
 let errors = [];
 
@@ -75,10 +76,16 @@ async function extractConversationHistory(selectedResponse) {
 // Modified code reference handling - the rest of the original code remains the same
 async function extractMessageContent(message) {
   let contents = [];
-
+  let creator = "";
+  if (COUNTER%2 === 1){
+    creator = "USER"
+  } else {
+    creator = "CLAUDE"
+  }
+  // console.log(creator + " message " + Math.round(COUNTER/2))
   userProvidedFileContent = await getUserProvidedFileContent(message);
   contents = contents.concat(userProvidedFileContent);
-  
+  COUNTER += 1;
   // Find the main grid container
   const gridContainer = message.querySelector('.grid-cols-1.grid.gap-2\\.5') || message.querySelector('.font-user-message');
   // const gridContainer = message.querySelector('.grid-cols-1.grid.gap-2\\.5');
@@ -89,7 +96,6 @@ async function extractMessageContent(message) {
     // Process elements sequentially to handle operations
     for (const element of elements) {
       const elementType = element.tagName.toLowerCase();
-      
       switch (elementType) {
         case 'p':
           contents.push({
@@ -164,16 +170,32 @@ function processCodeBlockFirstLine(str) {
 }
 
 async function getContentFromReference(referenceElement) {
-  const button = referenceElement.querySelector('button');
   if(!referenceElement){
     return;
   }
+  const image = referenceElement.querySelector("img");
+  const button = referenceElement.querySelector('button');
+  if(!button){
+    return;
+  } else if (image){
+    const imageTitle = image.getAttribute("alt");
+    return {
+        type: 'user-image-reference',
+        title: imageTitle,
+        elements: [{
+          text: [`There was an image the user provided in this conversation called ${imageTitle}.  It's unfortunately not included in the conversation.  Please let the user know so they can provide it to you if needed.`]
+        }]
+    }
+  }
   if (!button) return null;
-
+  console.log("referenceElement")
+  console.log(referenceElement)
   // Get the title before clicking
   let titleElement = referenceElement.querySelector(CLAUDE_TITLE_ELEMENT_CLASSES);
   let referenceTitle = '';
   let fileAuthor = null;
+  console.log("titleElement")
+  console.log(titleElement)
   // it is a claude file
   if (titleElement){
     referenceTitle = titleElement.textContent;
@@ -266,7 +288,6 @@ function getContentFromSidebar(sidebar, referenceTitle) {
       displayCodeIfCodeButton(sidebar, referenceTitle);
     }
     sidebarContent = sidebar.querySelector(css_class);
-    console.log("css_class: " + css_class)
     css_class === SIDEBAR_MARKDOWN_CSS_CLASSES && sidebarContent != null ? isMarkdown = true : isMarkown = false;
     sidebarDiv = sidebar.querySelector(css_class);
     if (sidebarDiv != null) {
@@ -342,6 +363,8 @@ function addButtonsToMessages() {
           const sender = n%2 === 1 ? "user" : "claude"
           n += 1;
         })
+        console.log("conversationHistory");
+        console.log(conversationHistory);
         const formattedConversationHistory = formatConversationHistory(conversationHistory);
         const formattedConvoAsTextBlock = formattedConversationHistory.join(SPLITTER);
         createHistoryModal(formattedConvoAsTextBlock);
@@ -402,12 +425,11 @@ function formatChat(chat){
               listItems.push(formattedLine);
           })
           formattedContents.push(listItems.join("\n"));
-      } else if (item.type === 'file-reference') {
+      } else if (item.type === 'file-reference' || item.type === 'user-image-reference') {
           fileName = item.title;
           text = item.elements[0].text.join("\n")
           let formattedCode = `// Start of file: ${fileName}\n` + text + "\n // End of file"
           formattedContents.push(formattedCode);
-
       } else if (item.type === 'pre') {
           fileName = item.title;
           // remove header of codeblock
