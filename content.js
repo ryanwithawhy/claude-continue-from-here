@@ -183,7 +183,7 @@ async function getContentFromReference(referenceElement) {
         type: 'user-image-reference',
         title: imageTitle,
         elements: [{
-          text: [`There was an image the user provided in this conversation called ${imageTitle}.  It's unfortunately not included in the conversation.  Please let the user know so they can provide it to you if needed.`]
+          text: [`There was an image the user provided in this conversation called ${imageTitle}.  It was available in that chat, but it's unfortunately not included here.  Please let the user know so they can provide it to you if needed.`]
         }]
     }
   }
