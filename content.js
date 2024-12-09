@@ -194,8 +194,6 @@ async function getContentFromReference(referenceElement) {
   let titleElement = referenceElement.querySelector(CLAUDE_TITLE_ELEMENT_CLASSES);
   let referenceTitle = '';
   let fileAuthor = null;
-  console.log("titleElement")
-  console.log(titleElement)
   // it is a claude file
   if (titleElement){
     referenceTitle = titleElement.textContent;
@@ -211,7 +209,6 @@ async function getContentFromReference(referenceElement) {
     errors.push("There was an issue pulling one of the files")
     return;
   }
-  let correctSidebarOpen = false
   let currentTry = 0;
   let maxSidebarRetries = 3;
   let sidebarContent = null;
@@ -235,38 +232,18 @@ async function getContentFromReference(referenceElement) {
       } else if(fileAuthor === USER){
         headerWithTitle = sidebar.querySelector(USER_FILE_HEADER_WITH_TITLE);
       }
-      let sidebarTitle = null;
-      if(headerWithTitle){
-        sidebarTitle = headerWithTitle.textContent
-      } else {
-        errors.push(`There was an issue pulling the file ${referenceTitle}.  No sidebar header found.`);
-        return
-      }
-
+      sidebarContent = await getContentFromSidebar(sidebar, referenceTitle)
       // they don't always match so matching needs to be generous
-      if (
-             (sidebarTitle.includes(referenceTitle) || referenceTitle.includes(referenceTitle)) || 
-          ( referenceTitle.toLowerCase().includes("paste") & sidebarTitle.toLowerCase().includes("paste") )
-        ){
-        sidebarContent = await getContentFromSidebar(sidebar, referenceTitle)
-        correctSidebarOpen = true
-      }
     }
-    if (correctSidebarOpen != true || sidebarContent == null) {
+    if (sidebarContent == null) {
       currentTry += 1 
       await new Promise(resolve => setTimeout(resolve, 100));
     } 
   }
 
-  if (!correctSidebarOpen || sidebarContent === null){
-    if (!correctSidebarOpen){
-      const message = "Correct sidebar did not open."
-      errors.push(message);
-    }
-    if (sidebarContent === null){
-      const message = "Sidebar content is null."
-      errors.push(message);
-    }
+  if (sidebarContent === null){
+    const message = "Sidebar content is null."
+    errors.push(message);
     alert(`Something went wrong retrieving file data for ${referenceTitle}.  Please refresh your page and try again.  If the issue persists please open an issue at ${GITHUB_LINK}.  `)
     return null;
   } else {
@@ -288,7 +265,7 @@ function getContentFromSidebar(sidebar, referenceTitle) {
       displayCodeIfCodeButton(sidebar, referenceTitle);
     }
     sidebarContent = sidebar.querySelector(css_class);
-    css_class === SIDEBAR_MARKDOWN_CSS_CLASSES && sidebarContent != null ? isMarkdown = true : isMarkown = false;
+    css_class === SIDEBAR_MARKDOWN_CSS_CLASSES && sidebarContent != null ? isMarkdown = true : isMarkdown = false;
     sidebarDiv = sidebar.querySelector(css_class);
     if (sidebarDiv != null) {
         break;
