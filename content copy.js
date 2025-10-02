@@ -159,8 +159,12 @@ async function extractMessageContent(message) {
 // Output: Array of file reference objects with structure [{type: 'file-reference', title: string, elements: [{text: [string]}]}]
 // Function: Finds file thumbnail buttons in the message and extracts their content via sidebar
 async function getUserProvidedFileContent(message) {
+  console.log("message")
+  console.log(message)
   const userProvidedFilesContents = [];
   const fileButtons = message.querySelectorAll(FILE_BUTTON_IDENTIFIER);
+  console.log("fileButtons")
+  console.log(fileButtons)
 
   for (const button of fileButtons) {
     const buttonParent = button.parentElement;
@@ -199,8 +203,6 @@ async function getContentFromReference(referenceElement) {
   }
   const image = referenceElement.querySelector("img");
   const button = referenceElement.querySelector('button');
-  console.log("button")
-  console.log(button)
   if(!button){
     return;
   } else if (image){
