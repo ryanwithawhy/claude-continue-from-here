@@ -12,19 +12,24 @@ const SIDEBAR_USER_PROVIDED_CSS_CLASSES = '.rounded-lg.border-border-300.overflo
 const SIDEBAR_CONTENT_CSS_CLASSES = [
   SIDEBAR_CODE_BLOCK_CSS_CLASSES,
   SIDEBAR_MARKDOWN_CSS_CLASSES,
-  SIDEBAR_USER_PROVIDED_CSS_CLASSES
+  SIDEBAR_USER_PROVIDED_CSS_CLASSES,
+  ".font-claude-response"
 ];
-const SIDEBAR_CLASSES = '.fixed.bottom-0.top-0.flex.w-full.flex-col'
-const USER_FILE_HEADER_WITH_TITLE = 'h2.font-styrene-display.flex-1.truncate.text-lg.font-medium'
-const CLAUDE_FILE_HEADER_WITH_TITLE = 'h3.text-text-100.font-tiempos.truncate.pl-1.text-sm'
-const CLAUDE_TITLE_ELEMENT_CLASSES = '.font-medium.leading-tight'
+const SIDEBAR_CLASSES = '.max-md\\:absolute'
+const USER_FILE_HEADER_WITH_TITLE = 'h3.text-\\[12px\\].break-words.text-text-100.line-clamp-3'
+const CLAUDE_FILE_HEADER_WITH_TITLE = 'div.leading-tight.text-sm.line-clamp-1'
+const CLAUDE_TITLE_ELEMENT_CLASSES = 'h2.font-ui.flex-1.truncate.text-lg.font-medium'
 const USER = "USER";
 const CLAUDE = "CLAUDE"
 const USER_PASTE_REFERENCE_TITLE = "paste.txt"
 const USER_PASTE_SIDEBAR_TITLE = "Pasted content"
 const CLAUDE_MESSAGE_IDENTIFIER="div[data-test-render-count]:has(div[data-is-streaming])"
 const GENERAL_MESSAGE_IDENTIFIER = "[data-test-render-count]"
-const FILE_BUTTON_IDENTIFIER = '[data-testid="file-thumbnail"] > button'
+// const FILE_BUTTON_IDENTIFIER = '[data-testid="file-thumbnail"] > button'
+const FILE_BUTTON_IDENTIFIER = '[data-testid="file-thumbnail"] > button, img.w-full.h-full'
+
+const USER_GRID_CONTAINER_CLASSES='.bg-bg-300.rounded-xl'
+const CLAUDE_GRID_CONTAINER_CLASSES='.font-claude-response'
 let COUNTER = 1;
 
 let errors = [];
@@ -40,8 +45,7 @@ async function extractConversationHistory(selectedResponse) {
 
   // Get all messages in the chat by selecting elements with 'data-test-render-count' attribute
   const allMessages = document.querySelectorAll(GENERAL_MESSAGE_IDENTIFIER);
-  console.log('allMessages')
-  console.log(allMessages)
+
 
   // Flag to track when we've found the message where the user clicked the button
   let foundTarget = false;
@@ -56,6 +60,7 @@ async function extractConversationHistory(selectedResponse) {
       if (message === selectedResponse.closest(GENERAL_MESSAGE_IDENTIFIER)) {
           foundTarget = true;
       }
+
       // Extract the content from the selected message (text, code blocks, lists, etc.)
       const contents = await extractMessageContent(message);
       itemNumber += 1
@@ -77,8 +82,7 @@ async function extractConversationHistory(selectedResponse) {
       // This ensures we only get the conversation up to the point where user clicked
       if (foundTarget) break;
   }
-  console.log("history")
-  console.log(history)
+
   return history;
 
 }
@@ -96,12 +100,12 @@ async function extractMessageContent(message) {
   } else {
     creator = "CLAUDE"
   }
-  // console.log(creator + " message " + Math.round(COUNTER/2))
   userProvidedFileContent = await getUserProvidedFileContent(message);
   contents = contents.concat(userProvidedFileContent);
   COUNTER += 1;
   // Find the main grid container
-  const gridContainer = message.querySelector('.grid-cols-1.grid.gap-2\\.5') || message.querySelector('.font-user-message');
+  // const gridContainer = message.querySelector(CLAUDE_GRID_CONTAINER_CLASSES) || message.querySelector(USER_GRID_CONTAINER_CLASSES);
+  const gridContainer = message.querySelector("div:has(> p)");
   // const gridContainer = message.querySelector('.grid-cols-1.grid.gap-2\\.5');
 
   if (gridContainer) {
@@ -110,6 +114,10 @@ async function extractMessageContent(message) {
     // Process elements sequentially to handle operations
     for (const element of elements) {
       const elementType = element.tagName.toLowerCase();
+      // console.log("elementType")
+      // console.log(elementType)
+      // console.log("element")
+      // console.log(element)
       switch (elementType) {
         case 'p':
           contents.push({
@@ -118,11 +126,18 @@ async function extractMessageContent(message) {
           });
           break;
           
-        case 'pre':
+        case 'div':
           // Handle code blocks
-          const codeText = element.textContent.split('\n');
-          let language, firstLine = processCodeBlockFirstLine(codeText[0]);
-          codeText[0] = firstLine
+          let languageElement = element.querySelector("div.text-text-500.font-small.p-3\\.5.pb-0")
+          let language = null
+          if (languageElement){
+            language = "language: " + languageElement.textContent
+          }
+          let codeBlock = element.querySelector("pre")
+          const codeText = codeBlock.textContent.split('\n');
+          // let language, firstLine = processCodeBlockFirstLine(codeText[0]);
+          codeText.unshift(language)
+          // codeText[0] = firstLine
           contents.push({
             type: 'pre',
             elements: codeText
@@ -141,13 +156,13 @@ async function extractMessageContent(message) {
           });
           break;
           
-        case 'div':
-          // Check if it's a file reference
-          if (element.classList.contains('font-styrene') && element.classList.contains('relative')) {
-            const content = await getContentFromReference(element);
-            contents.push(content);
-          }
-          break;
+        // case 'div':
+        //   // Check if it's a file reference
+        //   if (element.classList.contains('font-styrene') && element.classList.contains('relative')) {
+        //     const content = await getContentFromReference(element);
+        //     contents.push(content);
+        //   }
+        //   break;
         }
     }
   }
@@ -161,7 +176,6 @@ async function extractMessageContent(message) {
 async function getUserProvidedFileContent(message) {
   const userProvidedFilesContents = [];
   const fileButtons = message.querySelectorAll(FILE_BUTTON_IDENTIFIER);
-
   for (const button of fileButtons) {
     const buttonParent = button.parentElement;
     const content = await getContentFromReference(buttonParent);
@@ -198,12 +212,13 @@ async function getContentFromReference(referenceElement) {
     return;
   }
   const image = referenceElement.querySelector("img");
-  const button = referenceElement.querySelector('button');
-  console.log("button")
-  console.log(button)
-  if(!button){
-    return;
-  } else if (image){
+  console.log("referenceElement")
+  console.log(referenceElement)
+  console.log("image")
+  console.log(image)
+  const button = referenceElement.querySelector('button, div[role="button"]');
+
+  if (image){
     const imageTitle = image.getAttribute("alt");
     return {
         type: 'user-image-reference',
@@ -219,14 +234,16 @@ async function getContentFromReference(referenceElement) {
   let titleElement = referenceElement.querySelector(CLAUDE_TITLE_ELEMENT_CLASSES);
   let referenceTitle = '';
   let fileAuthor = null;
+
   // it is a claude file
   if (titleElement){
+
     referenceTitle = titleElement.textContent;
     fileAuthor = CLAUDE;
   // it is a user file
   } else {
     titleElement = referenceElement.parentElement
-    referenceTitle = titleElement.getAttribute("data-testid");
+    referenceTitle = titleElement.textContent;
     fileAuthor = USER;
   }
 
@@ -249,6 +266,7 @@ async function getContentFromReference(referenceElement) {
 
     // get the hopefully open sidebar
     const sidebar = document.querySelector(SIDEBAR_CLASSES);
+
     if (sidebar){
       let headerWithTitle = null
       // check to see if there is a claude-generated file with a header available
@@ -257,6 +275,7 @@ async function getContentFromReference(referenceElement) {
       } else if(fileAuthor === USER){
         headerWithTitle = sidebar.querySelector(USER_FILE_HEADER_WITH_TITLE);
       }
+
       sidebarContent = await getContentFromSidebar(sidebar, referenceTitle)
       // they don't always match so matching needs to be generous
     }
@@ -381,8 +400,7 @@ function addButtonsToMessages() {
           const sender = n%2 === 1 ? "user" : "claude"
           n += 1;
         })
-        console.log("conversationHistory");
-        console.log(conversationHistory);
+
         const formattedConversationHistory = formatConversationHistory(conversationHistory);
         const formattedConvoAsTextBlock = formattedConversationHistory.join(SPLITTER);
         createHistoryModal(formattedConvoAsTextBlock);
