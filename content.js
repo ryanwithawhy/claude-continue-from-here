@@ -114,10 +114,7 @@ async function extractMessageContent(message) {
     // Process elements sequentially to handle operations
     for (const element of elements) {
       const elementType = element.tagName.toLowerCase();
-      // console.log("elementType")
-      // console.log(elementType)
-      // console.log("element")
-      // console.log(element)
+
       switch (elementType) {
         case 'p':
           contents.push({
@@ -212,10 +209,7 @@ async function getContentFromReference(referenceElement) {
     return;
   }
   const image = referenceElement.querySelector("img");
-  console.log("referenceElement")
-  console.log(referenceElement)
-  console.log("image")
-  console.log(image)
+
   const button = referenceElement.querySelector('button, div[role="button"]');
 
   if (image){
